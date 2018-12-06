@@ -15,7 +15,11 @@ cfg = __C
 # Data directory
 __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 __C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'data'))
-__C.VOC_DATA = osp.abspath(osp.join(__C.DATA_DIR, 'COCO'))
+
+# Pixel mean values (BGR order) as a (1, 1, 3) array
+# We use the same pixel mean for all networks even though it's not exactly what
+# they were trained with
+__C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 
 #
 # Training options
@@ -35,6 +39,29 @@ __C.TRAIN.WEIGHT_DECAY = 0.0005
 __C.TRAIN.MAX_ITERS = 20000
 # Mini batch size for training
 __C.TRAIN.BATCH_SIZE = 1
+
+# If use flipped image
+__C.TRAIN.USE_FLIPPED = True
+# Train using these proposals
+__C.TRAIN.PROPOSAL_METHOD = 'gt'
+# Whether to use all ground truth bounding boxes for training,
+__C.TRAIN.USE_ALL_GT = True
+
+# Overlap threshold for a ROI to be considered foreground (if >= FG_THRESH)
+__C.TRAIN.FG_THRESH = 0.5
+
+# Overlap threshold for a ROI to be considered background (class = 0 if
+# overlap in [LO, HI))
+__C.TRAIN.BG_THRESH_HI = 0.5
+__C.TRAIN.BG_THRESH_LO = 0.1
+
+# Scale to use during training (can list multiple scales)
+# The scale is the pixel size of an image's shortest side
+__C.TRAIN.SCALES = (600,)
+
+# Max pixel size of the longest side of a scaled input image
+__C.TRAIN.MAX_SIZE = 1000
+
 
 
 

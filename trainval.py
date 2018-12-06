@@ -10,6 +10,8 @@ from torch import nn
 
 import __init__path
 from utils.config import cfg, cfg_from_file, cfg_from_list
+from roi_data_layer.roidb import combined_roidb
+from roi_data_layer.coco_loader import CocoDataset
 
 def parse_args():
     """
@@ -67,7 +69,21 @@ if __name__ == "__main__":
         print("Warning: You have a CUDA device, so you should run on it")
 
     if args.dataset == 'COCO':
-        temp = COCO(os.path.join("/home/zlk/Datasets/COCO/annotations/instances_train2014.json"))
+        args.imdb_name = "coco_2014_train+coco_2014_valminusminival"
+        args.imdbval_name = "coco_2014_minival"
+        imdb, roidb = combined_roidb(args.imdb_name)
+        dataset = CocoDataset(roidb, imdb.num_classes, training=True)
+
+    if args.net == 'res101':
+        fasterRCNN = resnet(imdb.num_classes, 101, pretrained=True)
+
+    """
+    Only support batch size = 1
+    """
+    dataloader = DataLoader(dataset, batch_size=1)
+    data_iter = dataloader.__iter__()
+
+    image, info, gt_boxes = data_iter.next()
 
     a = 1
 
