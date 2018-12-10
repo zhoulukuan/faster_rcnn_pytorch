@@ -27,7 +27,7 @@ __C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 __C.TRAIN = edict()
 
 # Pretrained model
-__C.TRAIN.PRETRAINED_MODEL = osp.abspath(osp.join(__C.DATA_DIR, 'MS_DeepLab_resnet_pretrained_COCO_init.pth'))
+__C.TRAIN.PRETRAINED_MODEL = osp.abspath(osp.join(__C.DATA_DIR, 'resnet101_caffe.pth'))
 
 # Initial learning rate
 __C.TRAIN.LEARNING_RATE = 0.001
@@ -61,6 +61,21 @@ __C.TRAIN.SCALES = (600,)
 
 # Max pixel size of the longest side of a scaled input image
 __C.TRAIN.MAX_SIZE = 1000
+
+# Anchor scales for RPN
+__C.ANCHOR_SCALES = [8,16,32]
+
+# Anchor ratios for RPN
+__C.ANCHOR_RATIOS = [0.5,1,2]
+
+# Feature stride for RPN
+__C.FEAT_STRIDE = 16
+
+# Number of fixed blocks during training, by default the first of all 4 blocks is fixed
+# Range: 0 (none) to 3 (all)
+__C.RESNET.FIXED_BLOCKS = 1
+
+
 
 
 

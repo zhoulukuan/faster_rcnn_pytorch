@@ -74,8 +74,8 @@ if __name__ == "__main__":
         imdb, roidb = combined_roidb(args.imdb_name)
         dataset = CocoDataset(roidb, imdb.num_classes, training=True)
 
-    if args.net == 'res101':
-        fasterRCNN = resnet(imdb.num_classes, 101, pretrained=True)
+    # if args.net == 'res101':
+    #     fasterRCNN = resnet(imdb.num_classes, 101, pretrained=True)
 
     """
     Only support batch size = 1
