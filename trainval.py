@@ -2,13 +2,14 @@ import os.path as osp
 import os
 import argparse
 import pprint
-from pycocotools.coco import COCO
+import shutil
 
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
 
 import __init__path
+from net.resnet import resnet
 from utils.config import cfg, cfg_from_file, cfg_from_list
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.coco_loader import CocoDataset
@@ -74,16 +75,31 @@ if __name__ == "__main__":
         imdb, roidb = combined_roidb(args.imdb_name)
         dataset = CocoDataset(roidb, imdb.num_classes, training=True)
 
-    # if args.net == 'res101':
-    #     fasterRCNN = resnet(imdb.num_classes, 101, pretrained=True)
+    if args.net == 'res101':
+        fasterRCNN = resnet(imdb.classes, 101, pretrained=True)
 
     """
     Only support batch size = 1
     """
     dataloader = DataLoader(dataset, batch_size=1)
-    data_iter = dataloader.__iter__()
+    iters_per_epoch = int(len(roidb) / cfg.TRAIN.BATCH_SIZE)
 
-    image, info, gt_boxes = data_iter.next()
+    ### Use tensorboardX
+    if args.use_tfboard:
+        from tensorboardX import SummaryWriter
+        logger = SummaryWriter(args.log_dir)
+        shutil.rmtree(args.log_dir)
+        os.mkdir(args.log_dir)
 
-    a = 1
+    fasterRCNN.train()
+    for epoch in range(1, cfg.TRAIN.MAX_EPOCHS + 1):
+
+        if epoch % (cfg.TRAIN.LR_DECAY_STEPS + 1) == 0:
+            pass
+        data_iter = data_iter.__iter__()
+
+        for step in range(iters_per_epoch):
+            image, info, gt_boxes = data_iter.next()
+            output = fasterRCNN(image, info, gt_boxes)
+
 

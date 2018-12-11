@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from net.rpn import  RPN
+from rpn.rpn import  RPN
 
 class FasterRCNN(nn.Module):
     """Faster RCNN base class"""
@@ -19,13 +19,13 @@ class FasterRCNN(nn.Module):
 
         im_info = im_info.data
         gt_boxes = gt_boxes.data
-
-        ## feed images to rcnn_base to obtain base feature for rpn
         base_feat = self.RCNN_base(image)
 
         ## feed base feat to get RPN
         rois, rpn_cls, rpn_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes)
 
+
+        ## feed images to rcnn_base to obtain base feature for rpn
 
 
 

@@ -36,7 +36,7 @@ __C.TRAIN.MOMENTUM = 0.9
 # Weight decay, for regularization
 __C.TRAIN.WEIGHT_DECAY = 0.0005
 # Max iters
-__C.TRAIN.MAX_ITERS = 20000
+__C.TRAIN.MAX_EPOCHS = 10
 # Mini batch size for training
 __C.TRAIN.BATCH_SIZE = 1
 
@@ -62,6 +62,10 @@ __C.TRAIN.SCALES = (600,)
 # Max pixel size of the longest side of a scaled input image
 __C.TRAIN.MAX_SIZE = 1000
 
+# If class agnostic during rpn stage
+__C.TRAIN.CLASS_AGNOSTIC = False
+
+
 # Anchor scales for RPN
 __C.ANCHOR_SCALES = [8,16,32]
 
@@ -70,6 +74,7 @@ __C.ANCHOR_RATIOS = [0.5,1,2]
 
 # Feature stride for RPN
 __C.FEAT_STRIDE = 16
+
 
 # Number of fixed blocks during training, by default the first of all 4 blocks is fixed
 # Range: 0 (none) to 3 (all)
