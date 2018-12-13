@@ -91,12 +91,13 @@ if __name__ == "__main__":
         shutil.rmtree(args.log_dir)
         os.mkdir(args.log_dir)
 
+    fasterRCNN.create_architecture()
     fasterRCNN.train()
     for epoch in range(1, cfg.TRAIN.MAX_EPOCHS + 1):
 
-        if epoch % (cfg.TRAIN.LR_DECAY_STEPS + 1) == 0:
+        if epoch % (cfg.TRAIN.LR_DECAY_EPOCH + 1) == 0:
             pass
-        data_iter = data_iter.__iter__()
+        data_iter = dataloader.__iter__()
 
         for step in range(iters_per_epoch):
             image, info, gt_boxes = data_iter.next()
