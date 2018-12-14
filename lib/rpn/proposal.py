@@ -15,6 +15,7 @@ import numpy as np
 from utils.config import cfg
 from rpn.generate_anchors import generate_anchors
 from rpn.bbox_transform import bbox_transform_inv, clip_boxes
+from utils.nms_wrapper import nms
 
 
 class Proposal(nn.Module):
@@ -28,7 +29,7 @@ class Proposal(nn.Module):
         self._num_anchors = self._anchor.shape[0]
 
     def forward(self, scores, bbox_delta, im_info, cfg_key):
-        fg_scores = scores[:, self._num_anchors:, :, :]
+        scores = scores[:, self._num_anchors:, :, :]
 
         pre_nms_topN  = cfg[cfg_key].RPN_PRE_NMS_TOP_N
         post_nms_topN = cfg[cfg_key].RPN_POST_NMS_TOP_N
@@ -46,15 +47,39 @@ class Proposal(nn.Module):
         A = self._num_anchors
         K = shifts.shape[0]
         anchors = self._anchor.reshape((1, A, 4)) + shifts.reshape((1, K, 4)).transpose((1, 0, 2))
-        anchors = anchors.reshape((K * A, 4)).astype(np.float32, copy=False)
+        anchors_reshape = anchors.reshape((K * A, 4)).astype(np.float32, copy=False)
 
         # Convert the anchor into proposal
         bbox_delta = bbox_delta.permute(0, 2, 3, 1).contiguous()
         bbox_delta = bbox_delta.view(-1, 4)
-        proposals = bbox_transform_inv(torch.from_numpy(anchors), bbox_delta)
+        proposals = bbox_transform_inv(torch.from_numpy(anchors_reshape), bbox_delta)
         proposals = clip_boxes(proposals, im_info)
 
         # choose the proposals
         scores = scores.permute(0, 2, 3, 1).contiguous()
-        scores = scores.view(batch_size, -1)
+        scores = scores.view(-1, 1)
+
+        # pick the top region proposals
+        scores, order = scores.view(-1).sort(descending=True)
+        if pre_nms_topN > 0:
+            order = order[:pre_nms_topN]
+            scores = scores[:pre_nms_topN].view(-1, 1)
+        proposals = proposals[order.data, :]
+
+        # Non-maximal suppression
+        keep = nms(torch.cat((proposals, scores), 1).data, nms_thresh)
+
+        # pick the  top region proposals after nms
+        if post_nms_topN > 0:
+            keep = keep[:post_nms_topN]
+        proposals = proposals[keep, :]
+        scores = scores[keep, :]
+
+        # TODO: batch_size > 1
+        # padding batch ids at the first row
+        output = scores.new(post_nms_topN, 5).zero_()
+        output[:, 1:] = proposals
+
+        return output, anchors_reshape
+
 
