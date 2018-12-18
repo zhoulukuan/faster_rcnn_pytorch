@@ -70,6 +70,8 @@ class RPN(nn.Module):
             assert gt_boxes is not None
             rpn_data = self.Anchor_target(rpn_cls_score.data, gt_boxes, im_info, anchors)
 
+            a = 1
+
         return rois, self.rpn_loss_cls, rpn_bbox_pred
 
 

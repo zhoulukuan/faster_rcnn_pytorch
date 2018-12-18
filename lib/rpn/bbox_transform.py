@@ -66,7 +66,6 @@ def bbox_transform_inv(boxes, deltas):
 
 
 def clip_boxes(boxes, im_shape):
-
   boxes[:, 0::4].clamp_(0, im_shape[0, 1] - 1)
   boxes[:, 1::4].clamp_(0, im_shape[0, 0] - 1)
   boxes[:, 2::4].clamp_(0, im_shape[0, 1] - 1)

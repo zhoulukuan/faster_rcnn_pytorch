@@ -83,8 +83,14 @@ __C.TRAIN.RPN_NMS_THRESH = 0.7
 __C.TRAIN.RPN_PRE_NMS_TOP_N = 12000
 # Number of top scoring boxes to keep after applying NMS to RPN proposals
 __C.TRAIN.RPN_POST_NMS_TOP_N = 2000
-# Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
-__C.TRAIN.RPN_MIN_SIZE = 8
+# IOU >= thresh: positive example
+__C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
+# IOU < thresh: negative example
+__C.TRAIN.RPN_NEGATIVE_OVERLAP = 0.3
+# Max number of foreground examples
+__C.TRAIN.RPN_FG_FRACTION = 0.5
+# Total number of examples
+__C.TRAIN.RPN_BATCHSIZE = 256
 
 
 
