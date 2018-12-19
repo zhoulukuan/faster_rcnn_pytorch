@@ -37,8 +37,6 @@ class AnchorTarget(nn.Module):
 
         # allocate labels: 1 for positive, 0 for negative, -1 for not care
         labels = gt_boxes.new(num_insides).fill_(-1)
-        bbox_inside_weights = gt_boxes.new(num_insides).zero_()
-        bbox_outside_weights = gt_boxes.new(num_insides).zero_()
 
         overlaps = bbox_overlaps(anchors, gt_boxes)
 
@@ -74,7 +72,9 @@ class AnchorTarget(nn.Module):
 
         # bbox_inside_weights: gain for diff(pred_boxes - gt_boxes)
         # use single number 1 to represent unchanged, change for 4 different numbers if needed
-        # bbox_outside_weight: coefficient for positive and negative examples
+        # don't change default 0 for negative samples which should be ignored in computing bbox regression loss
+        # bbox_outside_weight: coefficient for positive and negative examples, different from paper
+        # seen in change in https://github.com/rbgirshick/py-faster-rcnn/blob/781a917b378dbfdedb45b6a56189a31982da1b43/lib/rpn/anchor_target_layer.py
         bbox_inside_weights = gt_boxes.new(id_insides.size(0), 4).zero_()
         bbox_inside_weights[labels == 1, :] = 1
         bbox_outside_weights = gt_boxes.new(id_insides.size(0), 4).zero_()

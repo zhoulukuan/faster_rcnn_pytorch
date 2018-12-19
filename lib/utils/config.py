@@ -64,6 +64,12 @@ __C.TRAIN.SCALES = (600,)
 __C.TRAIN.MAX_SIZE = 1000
 
 
+# Minibatch size (number of regions of interest [ROIs])
+__C.TRAIN.BATCH_SIZE = 128
+# Fraction of minibatch that is labeled foreground (i.e. class > 0)
+__C.TRAIN.FG_FRACTION = 0.25
+
+
 # If class agnostic during rpn stage
 __C.TRAIN.CLASS_AGNOSTIC = False
 

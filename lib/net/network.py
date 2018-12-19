@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from rpn.rpn import  RPN
+from rpn.rpn import RPN
+from rpn.proposal_target import ProposalTarget
+from utils.config import cfg
 
 class FasterRCNN(nn.Module):
     """Faster RCNN base class"""
@@ -13,20 +15,26 @@ class FasterRCNN(nn.Module):
         self.num_classes = len(classes)
 
         self.RCNN_rpn = RPN(self.base_model_out_dim)
+        self.RCNN_proposal_target = ProposalTarget(self.num_classes)
 
     def forward(self, image, im_info, gt_boxes):
         batch_size = image.size(0)
 
         im_info = im_info.data
         gt_boxes = gt_boxes.data
+        ## feed images to rcnn_base to obtain base feature for rpn
         base_feat = self.RCNN_base(image)
 
-        ## feed base feat to get RPN
-        rois, rpn_cls, rpn_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes)
+        # feed base feat to get RPN
+        rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes)
+
+        # if in training mode, use predicted rois for refine box
+        if self.training:
+            roi_data = self.RCNN_proposal_target(rois, gt_boxes)
 
 
-        ## feed images to rcnn_base to obtain base feature for rpn
 
+        return None
 
 
     def _init_weights(self):

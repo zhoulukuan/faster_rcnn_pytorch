@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from utils.config import cfg
 from rpn.proposal import Proposal
 from rpn.anchor_target import AnchorTarget
-
+from utils.tools import _smooth_l1_loss
 
 class RPN(nn.Module):
     """Region Proposal Network"""
@@ -70,9 +70,26 @@ class RPN(nn.Module):
             assert gt_boxes is not None
             rpn_data = self.Anchor_target(rpn_cls_score.data, gt_boxes, im_info, anchors)
 
-            a = 1
+            # compute classification loss
+            rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 2)
+            rpn_label = rpn_data[0].view(batch_size, -1)
 
-        return rois, self.rpn_loss_cls, rpn_bbox_pred
+            rpn_keep = rpn_label.view(-1).ne(-1).nonzero().view(-1)
+            rpn_cls_score = torch.index_select(rpn_cls_score.view(-1, 2), 0, rpn_keep)
+            rpn_label = torch.index_select(rpn_label.view(-1), 0, rpn_keep).long()
+            self.rpn_loss_cls = F.cross_entropy(rpn_cls_score, rpn_label)
+
+            # compute bbox regression loss
+            rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = rpn_data[1:]
+            self.rpn_loss_box = _smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets,
+                                                rpn_bbox_inside_weights, rpn_bbox_outside_weights)
+
+        return rois, self.rpn_loss_cls, self.rpn_loss_box
+
+
+
+
+
 
 
 
