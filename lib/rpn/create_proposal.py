@@ -18,12 +18,12 @@ from rpn.bbox_transform import bbox_transform_inv, clip_boxes
 from utils.nms_wrapper import nms
 
 
-class Proposal(nn.Module):
+class CreateProposal(nn.Module):
     """
-    Get region proposals from base model outputs
+    Get region proposals from base model outputs and anchors
     """
     def __init__(self, feat_stride, scales, ratios):
-        super(Proposal, self).__init__()
+        super(CreateProposal, self).__init__()
         self._feat_stride = feat_stride
         self._anchor = generate_anchors(scales=np.array(scales), ratios=np.array(ratios))
         self._num_anchors = self._anchor.shape[0]

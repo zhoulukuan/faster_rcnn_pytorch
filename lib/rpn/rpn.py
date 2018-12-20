@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from utils.config import cfg
-from rpn.proposal import Proposal
+from rpn.create_proposal import CreateProposal
 from rpn.anchor_target import AnchorTarget
 from utils.tools import _smooth_l1_loss
 
@@ -28,7 +28,7 @@ class RPN(nn.Module):
         self.RPN_bbox_pred = nn.Conv2d(512, self.rpn_bbox_out_dim, 1, 1, 0)
 
         # define proposal layer
-        self.RPN_proposal = Proposal(self.feat_stride, self.anchor_scales, self.anchor_ratios)
+        self.RPN_proposal = CreateProposal(self.feat_stride, self.anchor_scales, self.anchor_ratios)
 
         # define anchor target layers
         self.Anchor_target = AnchorTarget()

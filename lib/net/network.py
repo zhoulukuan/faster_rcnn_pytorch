@@ -31,8 +31,21 @@ class FasterRCNN(nn.Module):
         # if in training mode, use predicted rois for refine box
         if self.training:
             roi_data = self.RCNN_proposal_target(rois, gt_boxes)
+            rois, rois_label, rois_bbox_target, rois_inside_ws, rois_outside_ws = roi_data
 
+            rois_label = rois_label.view(-1).long()
+            rois_bbox_target = rois_bbox_target.view(-1, rois_bbox_target.size(1))
+            rois_inside_ws = rois_inside_ws.view(-1, rois_inside_ws.size(1))
+            rois_outside_ws = rois_outside_ws.view(-1, rois_outside_ws.size(1))
+        else:
+            rois_label = None
+            rois_bbox_target = None
+            rois_inside_ws = None
+            rois_outside_ws = None
+            rpn_loss_cls = 0
+            rpn_loss_bbox = 0
 
+        # Roi Align
 
         return None
 

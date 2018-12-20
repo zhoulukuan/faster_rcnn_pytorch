@@ -40,8 +40,9 @@ __C.TRAIN.WEIGHT_DECAY = 0.0005
 __C.TRAIN.MAX_EPOCHS = 10
 # Decay learning rate after some epochs
 __C.TRAIN.LR_DECAY_EPOCH = 4
-# Mini batch size for training
-__C.TRAIN.BATCH_SIZE = 1
+# Images in a batch
+__C.TRAIN.IMS_PER_BATCH = 1
+
 
 
 # Settint about dataset
