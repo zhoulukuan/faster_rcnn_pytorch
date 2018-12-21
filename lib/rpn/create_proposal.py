@@ -52,7 +52,7 @@ class CreateProposal(nn.Module):
         # Convert the anchor into proposal
         bbox_delta = bbox_delta.permute(0, 2, 3, 1).contiguous()
         bbox_delta = bbox_delta.view(-1, 4)
-        proposals = bbox_transform_inv(torch.from_numpy(anchors_reshape), bbox_delta)
+        proposals = bbox_transform_inv(torch.from_numpy(anchors_reshape).type_as(bbox_delta), bbox_delta)
         proposals = clip_boxes(proposals, im_info)
 
         # choose the proposals
@@ -78,7 +78,8 @@ class CreateProposal(nn.Module):
         # TODO: batch_size > 1
         # padding batch ids at the first row
         output = scores.new(post_nms_topN, 5).zero_()
-        output[:, 1:] = proposals
+        num_proposal = proposals.size(0)
+        output[:num_proposal, 1:] = proposals
 
         return output, anchors_reshape
 

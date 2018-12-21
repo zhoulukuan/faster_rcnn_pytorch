@@ -21,8 +21,14 @@ class ProposalTarget(nn.Module):
     def forward(self, all_rois, gt_boxes):
         batch_size = 1
         gt_boxes = gt_boxes[0]
+        self.BBOX_NORMALIZE_MEANS = self.BBOX_NORMALIZE_MEANS.type_as(gt_boxes)
+        self.BBOX_NORMALIZE_STDS = self.BBOX_NORMALIZE_STDS.type_as(gt_boxes)
+        self.BBOX_INSIDE_WEIGHTS = self.BBOX_INSIDE_WEIGHTS.type_as(gt_boxes)
 
         # Add ground truth in the set of candidate rois
+        gt_boxes_append = gt_boxes.new(gt_boxes.size()).zero_()
+        gt_boxes_append[:, 1:5] = gt_boxes[:, :4]
+        all_rois = torch.cat([all_rois, gt_boxes_append], 0)
 
         num_images = 1
         rois_per_image = int(cfg.TRAIN.BATCH_SIZE / num_images)
@@ -87,7 +93,7 @@ class ProposalTarget(nn.Module):
         bbox_targets, bbox_inside_weights = self._get_bbox_regression_labels(bbox_target_data, labels_new)
         bbox_outside_weights = (bbox_inside_weights > 0).float()
 
-        return labels_new, rois_new, bbox_targets, bbox_inside_weights, bbox_outside_weights
+        return rois_new, labels_new, bbox_targets, bbox_inside_weights, bbox_outside_weights
 
     def _compute_target(self, ex_rois, gt_rois):
         """Compute bounding-box regression targets for an image."""

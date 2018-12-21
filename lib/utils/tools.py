@@ -14,3 +14,11 @@ def _smooth_l1_loss(bbox_pred, bbox_targets, bbox_inside_weights, bbox_outside_w
       loss_box = loss_box.sum(i)
     loss_box = loss_box.mean()
     return loss_box
+
+
+def adjust_learning_rate(optimizer, decay = 0.1):
+    """
+    Change learning rate in optimizer.
+    """
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = decay * param_group['lr']

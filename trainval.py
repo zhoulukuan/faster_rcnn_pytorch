@@ -11,8 +11,9 @@ from torch import nn
 import __init__path
 from net.resnet import resnet
 from utils.config import cfg, cfg_from_file, cfg_from_list
-from roi_data_layer.roidb import combined_roidb
-from roi_data_layer.coco_loader import CocoDataset
+from utils.tools import adjust_learning_rate
+from data_layer.roidb import combined_roidb
+from data_layer.coco_loader import CocoDataset
 
 def parse_args():
     """
@@ -78,11 +79,14 @@ if __name__ == "__main__":
     if args.net == 'res101':
         fasterRCNN = resnet(imdb.classes, 101, pretrained=True)
 
-    """
-    Only support batch size = 1
-    """
-    dataloader = DataLoader(dataset, batch_size=1)
-    iters_per_epoch = int(len(roidb) / cfg.TRAIN.BATCH_SIZE)
+    # image = torch.FloatTensor(1)
+    # info = torch.FloatTensor(1)
+    # gt_boxes = torch.FloatTensor(1)
+    # if cfg.CUDA:
+    #     fasterRCNN.cuda()
+        # image.cuda()
+        # info.cuda()
+        # gt_boxes.cuda()
 
     ### Use tensorboardX
     if args.use_tfboard:
@@ -91,16 +95,85 @@ if __name__ == "__main__":
         shutil.rmtree(args.log_dir)
         os.mkdir(args.log_dir)
 
+    lr = cfg.TRAIN.LEARNING_RATE
+    params = []
+    for key, value in dict(fasterRCNN.named_parameters()).items():
+        if value.requires_grad:
+            if 'bias' in key:
+                params += [{'params':[value], 'lr':lr * 2, 'weight_decay': 0}]
+            else:
+                params += [{'params':[value], 'lr':lr, 'weight_decay':cfg.TRAIN.WEIGHT_DECAY}]
+    optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
+
+    dataloader = DataLoader(dataset, batch_size=1)
+    iters_per_epoch = int(len(roidb) / 1)
+
     fasterRCNN.create_architecture()
     fasterRCNN.train()
+
+    if cfg.CUDA:
+        fasterRCNN.cuda()
+
+    loss_temp = 0
     for epoch in range(1, cfg.TRAIN.MAX_EPOCHS + 1):
 
         if epoch % (cfg.TRAIN.LR_DECAY_EPOCH + 1) == 0:
-            pass
+            adjust_learning_rate(optimizer)
         data_iter = dataloader.__iter__()
 
         for step in range(iters_per_epoch):
             image, info, gt_boxes = data_iter.next()
-            output = fasterRCNN(image, info, gt_boxes)
+            if cfg.CUDA:
+                image = image.cuda()
+                info = info.cuda()
+                gt_boxes = gt_boxes.cuda()
+            # image.data.resize_(image.size()).copy_(image)
+            # info.data.resize_(info.size()).copy_(info)
+            # gt_boxes.data.resize_(info.size()).copy_(gt_boxes)
+            rois, cls_prob, bbox_pred, \
+            rpn_loss_cls, rpn_loss_box, \
+            RCNN_loss_cls, RCNN_loss_bbox, \
+            rois_label = fasterRCNN(image, info, gt_boxes)
 
+            loss = rpn_loss_cls.mean() + rpn_loss_box.mean() + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
+            loss_temp += loss
 
+            # backward
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if step % args.disp_interval == 0:
+                loss_temp /= args.disp_interval
+                loss_rpn_cls = rpn_loss_cls.item()
+                loss_rpn_box = rpn_loss_box.item()
+                loss_rcnn_cls = RCNN_loss_cls.item()
+                loss_rcnn_box = RCNN_loss_bbox.item()
+                fg_cnt = torch.sum(rois_label.data.ne(0))
+                bg_cnt = rois_label.data.numel() - fg_cnt
+
+                print("[epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" \
+                      % (epoch, step, iters_per_epoch, loss_temp, lr))
+                print("\t\t\trcnn_cls: %.4f, rcnn_box %.4f, rpn_cls: %.4f, rpn_box: %.4f, fg/bg=(%d/%d)" \
+                      % (loss_rcnn_cls, loss_rcnn_box, loss_rpn_cls, loss_rpn_box, fg_cnt, bg_cnt))
+
+                if args.use_tfboard:
+                    info = {
+                        'loss': loss,
+                        'loss_rpn_cls': loss_rpn_cls,
+                        'loss_rpn_box': loss_rpn_box,
+                        'loss_rcnn_cls': loss_rcnn_cls,
+                        'loss_rcnn_box': loss_rcnn_box
+                    }
+                    logger.add_scalars("loss", info, (epoch - 1) * iters_per_epoch + step)
+
+        save_path = osp.join(args.save_dir, 'fasterRCNN_{}_{}.pth'.format(epoch, step))
+        torch.save({'model': fasterRCNN.state_dict(),
+                    'epoch': epoch,
+                    'step' : step,
+                    'optimizer': optimizer.state_dict()
+                    }, save_path)
+        print("save model: {}".format(save_path))
+
+    if args.use_tfboard:
+        logger.close()

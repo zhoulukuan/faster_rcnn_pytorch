@@ -100,6 +100,11 @@ __C.TRAIN.RPN_FG_FRACTION = 0.5
 __C.TRAIN.RPN_BATCHSIZE = 256
 
 
+# Pooling method and size
+__C.POOLING_MODE = 'pool'
+__C.POOLING_SIZE = 7
+
+
 
 # Number of fixed blocks during training, by default the first of all 4 blocks is fixed
 # Range: 0 (none) to 3 (all)
@@ -107,11 +112,6 @@ __C.RESNET = edict()
 __C.RESNET.FIXED_BLOCKS = 1
 
 
-
-
-
-
-#
 # Testing options
 #
 __C.TEST = edict()

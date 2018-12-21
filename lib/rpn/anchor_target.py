@@ -21,7 +21,7 @@ class AnchorTarget(nn.Module):
     def forward(self, rpn_cls_score, gt_boxes, im_info, anchors):
         gt_boxes = gt_boxes[0, :, :4]
         # Convert to tensor for convenience of follow-up operation
-        all_anchors = torch.from_numpy(anchors)
+        all_anchors = torch.from_numpy(anchors).type_as(rpn_cls_score)
 
         total_anchors = all_anchors.size(0)
         keep = ((all_anchors[:, 0] >= -self._allowed_border) &
@@ -56,7 +56,8 @@ class AnchorTarget(nn.Module):
         fg_inds = torch.nonzero(labels == 1).view(-1)
         sum_fg = fg_inds.size(0)
         if sum_fg > num_fg:
-            rand_num = torch.randperm(sum_fg).type_as(gt_boxes).long()
+            rand_num = torch.from_numpy(np.random.permutation(sum_fg)).type_as(gt_boxes).long()
+            # rand_num = torch.randperm(sum_fg).type_as(gt_boxes).long()
             disable_inds = fg_inds[rand_num[:sum_fg-num_fg]]
             labels[disable_inds] = -1
 
@@ -64,7 +65,8 @@ class AnchorTarget(nn.Module):
         bg_inds = torch.nonzero(labels == 0).view(-1)
         sum_bg = bg_inds.size(0)
         if sum_bg > num_fg:
-            rand_num = torch.randperm(sum_bg).type_as(gt_boxes).long()
+            rand_num = torch.from_numpy(np.random.permutation(sum_bg)).type_as(gt_boxes).long()
+            # rand_num = torch.randperm(sum_bg).type_as(gt_boxes).long()
             disable_inds = bg_inds[rand_num[:sum_bg-num_bg]]
             labels[disable_inds] = -1
 

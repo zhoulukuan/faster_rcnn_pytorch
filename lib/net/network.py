@@ -5,11 +5,14 @@ import torch.nn.functional as F
 from rpn.rpn import RPN
 from rpn.proposal_target import ProposalTarget
 from utils.config import cfg
+from pooling.roi_pooling.modules.roi_pool import _RoIPooling
+from pooling.roi_align.modules.roi_align import RoIAlignAvg
+from utils.tools import _smooth_l1_loss
 
 class FasterRCNN(nn.Module):
     """Faster RCNN base class"""
 
-    def __init__(self, classes, class_agnostic=False):
+    def __init__(self, classes):
         super(FasterRCNN, self).__init__()
         self.classes = classes
         self.num_classes = len(classes)
@@ -17,11 +20,13 @@ class FasterRCNN(nn.Module):
         self.RCNN_rpn = RPN(self.base_model_out_dim)
         self.RCNN_proposal_target = ProposalTarget(self.num_classes)
 
+        # Pooling method
+        self.RCNN_roi_pool = _RoIPooling(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)
+        self.RCNN_roi_align = RoIAlignAvg(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)
+
     def forward(self, image, im_info, gt_boxes):
         batch_size = image.size(0)
 
-        im_info = im_info.data
-        gt_boxes = gt_boxes.data
         ## feed images to rcnn_base to obtain base feature for rpn
         base_feat = self.RCNN_base(image)
 
@@ -45,9 +50,38 @@ class FasterRCNN(nn.Module):
             rpn_loss_cls = 0
             rpn_loss_bbox = 0
 
-        # Roi Align
+        # Roi Pooling
+        if cfg.POOLING_MODE == 'align':
+            pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 5))
+        elif cfg.POOLING_MODE == 'pool':
+            pooled_feat = self.RCNN_roi_pool(base_feat, rois.view(-1, 5))
 
-        return None
+        # feed pooled features to top model
+        pooled_feat = self._head_to_tail(pooled_feat)
+
+        # compute bbox
+        bbox_pred = self.RCNN_bbox_pred(pooled_feat)
+        if self.training:
+            # select the corresponding columns according to roi labels
+            bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 4), 4)
+            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.view(rois_label.size(0), 1, 1).expand(rois_label.size(0), 1, 4))
+            bbox_pred = bbox_pred_select.squeeze(1)
+
+        # compute object classification probability
+        cls_score = self.RCNN_cls_score(pooled_feat)
+        cls_prob = F.softmax(cls_score, 1)
+
+        RCNN_loss_cls = 0
+        RCNN_loss_bbox = 0
+
+        if self.training:
+            # classification loss
+            RCNN_loss_cls = F.cross_entropy(cls_score, rois_label)
+
+            # bounding box regression L1 loss
+            RCNN_loss_bbox = _smooth_l1_loss(bbox_pred, rois_bbox_target, rois_inside_ws, rois_outside_ws)
+
+        return rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, rois_label
 
 
     def _init_weights(self):

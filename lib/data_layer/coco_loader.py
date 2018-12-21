@@ -6,7 +6,7 @@ import random
 
 import torch
 from torch.utils.data import Dataset
-from roi_data_layer.minibatch import get_minibatch
+from data_layer.minibatch import get_minibatch
 
 class CocoDataset(Dataset):
     def __init__(self, roidb, num_classes, training=False):
