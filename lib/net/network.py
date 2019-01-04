@@ -31,7 +31,7 @@ class FasterRCNN(nn.Module):
         base_feat = self.RCNN_base(image)
 
         # feed base feat to get RPN
-        rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes)
+        rois, rpn_loss_cls, rpn_loss_bbox, pp, np = self.RCNN_rpn(base_feat, im_info, gt_boxes)
 
         # if in training mode, use predicted rois for refine box
         if self.training:
@@ -81,7 +81,7 @@ class FasterRCNN(nn.Module):
             # bounding box regression L1 loss
             RCNN_loss_bbox = _smooth_l1_loss(bbox_pred, rois_bbox_target, rois_inside_ws, rois_outside_ws)
 
-        return rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, rois_label
+        return rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, rois_label, pp, np
 
 
     def _init_weights(self):

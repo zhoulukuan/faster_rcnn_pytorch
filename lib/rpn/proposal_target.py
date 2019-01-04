@@ -30,6 +30,9 @@ class ProposalTarget(nn.Module):
         gt_boxes_append[:, 1:5] = gt_boxes[:, :4]
         all_rois = torch.cat([all_rois, gt_boxes_append], 0)
 
+        # cfg.TRAIN.BATCH_SIZE = 5
+        # all_rois = torch.cat([all_rois[:5, :], gt_boxes_append], 0)
+
         num_images = 1
         rois_per_image = int(cfg.TRAIN.BATCH_SIZE / num_images)
         fg_rois_per_image = int(np.round(cfg.TRAIN.FG_FRACTION * rois_per_image))

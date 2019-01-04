@@ -28,7 +28,7 @@ def parse_args():
                     default='res101', type=str)
     parser.add_argument('--disp_interval', dest='disp_interval',
                       help='number of iterations to display',
-                      default=20, type=int)
+                      default=100, type=int)
     parser.add_argument('--checkpoint_interval', dest='checkpoint_interval',
                       help='number of save model and evaluate it',
                       default=1000, type=int)
@@ -100,12 +100,12 @@ if __name__ == "__main__":
     for key, value in dict(fasterRCNN.named_parameters()).items():
         if value.requires_grad:
             if 'bias' in key:
-                params += [{'params':[value], 'lr':lr * 2, 'weight_decay': 0}]
+                params += [{'params':[value], 'lr':lr*(cfg.TRAIN.DOUBLE_BIAS + 1), 'weight_decay': 0}]
             else:
                 params += [{'params':[value], 'lr':lr, 'weight_decay':cfg.TRAIN.WEIGHT_DECAY}]
     optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
 
-    dataloader = DataLoader(dataset, batch_size=1)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     iters_per_epoch = int(len(roidb) / 1)
 
     fasterRCNN.create_architecture()
@@ -133,10 +133,11 @@ if __name__ == "__main__":
             rois, cls_prob, bbox_pred, \
             rpn_loss_cls, rpn_loss_box, \
             RCNN_loss_cls, RCNN_loss_bbox, \
-            rois_label = fasterRCNN(image, info, gt_boxes)
+            rois_label, pp, np = fasterRCNN(image, info, gt_boxes)
 
-            loss = rpn_loss_cls.mean() + rpn_loss_box.mean() + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
-            loss_temp += loss
+            # loss = rpn_loss_cls.mean() + rpn_loss_box.mean() + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
+            loss = rpn_loss_cls.mean() + rpn_loss_box.mean()
+            loss_temp += loss.item()
 
             # backward
             optimizer.zero_grad()
@@ -145,17 +146,20 @@ if __name__ == "__main__":
 
             if step % args.disp_interval == 0:
                 loss_temp /= args.disp_interval
-                loss_rpn_cls = rpn_loss_cls.item()
-                loss_rpn_box = rpn_loss_box.item()
-                loss_rcnn_cls = RCNN_loss_cls.item()
-                loss_rcnn_box = RCNN_loss_bbox.item()
+                loss_rpn_cls = rpn_loss_cls.mean().item()
+                loss_rpn_box = rpn_loss_box.mean().item()
+                loss_rcnn_cls = RCNN_loss_cls.mean().item()
+                loss_rcnn_box = RCNN_loss_bbox.mean().item()
                 fg_cnt = torch.sum(rois_label.data.ne(0))
                 bg_cnt = rois_label.data.numel() - fg_cnt
 
-                print("[epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" \
-                      % (epoch, step, iters_per_epoch, loss_temp, lr))
-                print("\t\t\trcnn_cls: %.4f, rcnn_box %.4f, rpn_cls: %.4f, rpn_box: %.4f, fg/bg=(%d/%d)" \
-                      % (loss_rcnn_cls, loss_rcnn_box, loss_rpn_cls, loss_rpn_box, fg_cnt, bg_cnt))
+                # print("[epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" \
+                #       % (epoch, step, iters_per_epoch, loss_temp, lr))
+                # print("\t\t\trcnn_cls: %.4f, rcnn_box %.4f, rpn_cls: %.4f, rpn_box: %.4f, fg/bg=(%d/%d)" \
+                #       % (loss_rcnn_cls, loss_rcnn_box, loss_rpn_cls, loss_rpn_box, fg_cnt, bg_cnt))
+
+                print("[epoch %2d][iter %4d/%4d] rpn_cls: %.4f, rpn_box: %.4f, positive: %.4f   negative: %.4f, fg/bg=(%d/%d)" \
+                      % (epoch, step, iters_per_epoch, loss_rpn_cls, loss_rcnn_box, pp, np, fg_cnt, bg_cnt))
 
                 if args.use_tfboard:
                     info = {

@@ -57,7 +57,7 @@ class CreateProposal(nn.Module):
 
         # choose the proposals
         scores = scores.permute(0, 2, 3, 1).contiguous()
-        scores = scores.view(-1, 1)
+        scores = scores.view(1, -1)
 
         # pick the top region proposals
         scores, order = scores.view(-1).sort(descending=True)
@@ -65,6 +65,8 @@ class CreateProposal(nn.Module):
             order = order[:pre_nms_topN]
             scores = scores[:pre_nms_topN].view(-1, 1)
         proposals = proposals[order.data, :]
+
+        # _, order = torch.sort(scores.clone(), 1, True)
 
         # Non-maximal suppression
         keep = nms(torch.cat((proposals, scores), 1).data, nms_thresh)
