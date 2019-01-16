@@ -14,7 +14,7 @@ import numpy as np
 
 from utils.config import cfg
 from rpn.generate_anchors import generate_anchors
-from rpn.bbox_transform import bbox_transform_inv, clip_boxes
+from utils.bbox_transform import bbox_transform_inv, clip_boxes
 from utils.nms_wrapper import nms
 
 
@@ -66,7 +66,15 @@ class CreateProposal(nn.Module):
             scores = scores[:pre_nms_topN].view(-1, 1)
         proposals = proposals[order.data, :]
 
-        # _, order = torch.sort(scores.clone(), 1, True)
+        # scores_keep = scores
+        # _, order = torch.sort(scores_keep, 1, True)
+        # if pre_nms_topN > 0:
+        #     order_single = order[0]
+        #     scores_single = scores[0]
+        #     order_single = order_single[:pre_nms_topN]
+        # proposals = proposals[order_single, :]
+        # scores = scores_single[order_single].view(-1, 1)
+
 
         # Non-maximal suppression
         keep = nms(torch.cat((proposals, scores), 1).data, nms_thresh)

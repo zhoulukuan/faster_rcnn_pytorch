@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from utils.bbox import bbox_overlaps
-from rpn.bbox_transform import bbox_transform
+from utils.bbox_transform import bbox_transform
 from utils.config import cfg
 class AnchorTarget(nn.Module):
     """
@@ -40,17 +40,32 @@ class AnchorTarget(nn.Module):
 
         overlaps = bbox_overlaps(anchors, gt_boxes)
 
-        anchor_max_overlaps, anchor_achieve_max = torch.max(overlaps, 1)
-        gt_max_ove, gt_achieve_max = torch.max(overlaps, 0)
+        # anchor_max_overlaps, anchor_achieve_max = torch.max(overlaps, 1)
+        # gt_max_overlaps, gt_achieve_max = torch.max(overlaps, 0)
+        #
+        # # allocate negative labels
+        # labels[anchor_max_overlaps <= cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
+        #
+        # # allocate positive labels
+        # labels[anchor_max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1
+        # labels[gt_achieve_max] = 1
+        # # keep = torch.sum(overlaps.eq(gt_max_overlaps.view(1,-1).expand_as(overlaps)), 1)
+        # # labels[keep > 0] = 1
+        max_overlaps, argmax_overlaps = torch.max(overlaps, 1)
+        gt_max_overlaps, _ = torch.max(overlaps, 0)
 
-        # allocate negative labels
-        labels[anchor_max_overlaps <= cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
 
-        # allocate positive labels
-        labels[anchor_max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1
-        labels[gt_achieve_max] = 1
-        # keep = torch.sum(overlaps.eq(gt_max_overlaps.view(1,-1).expand_as(overlaps)), 1)
-        # labels[keep > 0] = 1
+        gt_max_overlaps[gt_max_overlaps == 0] = 1e-5
+        keep = torch.sum(overlaps.eq(gt_max_overlaps.view(1, -1).expand_as(overlaps)), 1)
+
+        if torch.sum(keep) > 0:
+            labels[keep > 0] = 1
+
+        # fg label: above threshold IOU
+        labels[max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1
+        labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0
+
+
 
         num_fg = int(cfg.TRAIN.RPN_FG_FRACTION * cfg.TRAIN.RPN_BATCHSIZE)
         fg_inds = torch.nonzero(labels == 1).view(-1)
@@ -58,7 +73,8 @@ class AnchorTarget(nn.Module):
         if sum_fg > num_fg:
             rand_num = torch.from_numpy(np.random.permutation(sum_fg)).type_as(gt_boxes).long()
             # rand_num = torch.randperm(sum_fg).type_as(gt_boxes).long()
-            disable_inds = fg_inds[rand_num[:sum_fg-num_fg]]
+            # disable_inds = fg_inds[rand_num[:sum_fg-num_fg]]
+            disable_inds = fg_inds[rand_num[:sum_fg - num_fg]]
             labels[disable_inds] = -1
 
         num_bg = cfg.TRAIN.RPN_BATCHSIZE - min(num_fg, sum_fg)
@@ -67,10 +83,10 @@ class AnchorTarget(nn.Module):
         if sum_bg > num_fg:
             rand_num = torch.from_numpy(np.random.permutation(sum_bg)).type_as(gt_boxes).long()
             # rand_num = torch.randperm(sum_bg).type_as(gt_boxes).long()
-            disable_inds = bg_inds[rand_num[:sum_bg-num_bg]]
+            disable_inds = bg_inds[rand_num[:sum_bg - num_bg]]
             labels[disable_inds] = -1
 
-        bbox_target = bbox_transform(anchors, gt_boxes[anchor_achieve_max])
+        bbox_target = bbox_transform(anchors, gt_boxes[argmax_overlaps])
 
         # bbox_inside_weights: gain for diff(pred_boxes - gt_boxes)
         # use single number 1 to represent unchanged, change for 4 different numbers if needed

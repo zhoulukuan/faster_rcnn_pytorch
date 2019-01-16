@@ -75,7 +75,8 @@ __C.TRAIN.FG_FRACTION = 0.25
 
 # If class agnostic during rpn stage
 __C.TRAIN.CLASS_AGNOSTIC = False
-
+__C.TRAIN.BBOX_NORMALIZE_MEANS = (0.0, 0.0, 0.0, 0.0)
+__C.TRAIN.BBOX_NORMALIZE_STDS = (0.1, 0.1, 0.2, 0.2)
 
 # Feature stride for RPN
 __C.FEAT_STRIDE = 16
@@ -117,6 +118,14 @@ __C.RESNET.FIXED_BLOCKS = 1
 # Testing options
 #
 __C.TEST = edict()
+
+## NMS threshold used on RPN proposals
+__C.TEST.RPN_NMS_THRESH = 0.7
+## Number of top scoring boxes to keep before apply NMS to RPN proposals
+__C.TEST.RPN_PRE_NMS_TOP_N = 6000
+
+## Number of top scoring boxes to keep after applying NMS to RPN proposals
+__C.TEST.RPN_POST_NMS_TOP_N = 300
 
 # If use GPU for training
 __C.CUDA = True

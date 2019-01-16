@@ -68,6 +68,18 @@ def filter_roidb(roidb):
     print('Filtered {} roidb entries: {} -> {}'.format(num - num_after,
                                                        num, num_after))
     return filtered_roidb
+# def filter_roidb(roidb):
+#     # filter the image without bounding box.
+#     print('before filtering, there are %d images...' % (len(roidb)))
+#     i = 0
+#     while i < len(roidb):
+#       if len(roidb[i]['boxes']) == 0:
+#         del roidb[i]
+#         i -= 1
+#       i += 1
+#
+#     print('after filtering, there are %d images...' % (len(roidb)))
+#     return roidb
 
 
 def combined_roidb(imdb_names, training=True):

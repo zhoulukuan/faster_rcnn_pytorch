@@ -4,7 +4,8 @@ import numpy as np
 
 from utils.config import cfg
 from utils.bbox import bbox_overlaps
-from rpn.bbox_transform import bbox_transform, bbox_transform_inv
+from utils.bbox_transform import bbox_transform
+
 
 class ProposalTarget(nn.Module):
     """
@@ -14,8 +15,8 @@ class ProposalTarget(nn.Module):
     def __init__(self, num_classes):
         super(ProposalTarget, self).__init__()
         self._num_classes = num_classes
-        self.BBOX_NORMALIZE_MEANS = torch.FloatTensor((0.0, 0.0, 0.0, 0.0))
-        self.BBOX_NORMALIZE_STDS =  torch.FloatTensor((0.1, 0.1, 0.2, 0.2))
+        self.BBOX_NORMALIZE_MEANS = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS)
+        self.BBOX_NORMALIZE_STDS =  torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS)
         self.BBOX_INSIDE_WEIGHTS =  torch.FloatTensor((1.0, 1.0, 1.0, 1.0))
 
     def forward(self, all_rois, gt_boxes):
