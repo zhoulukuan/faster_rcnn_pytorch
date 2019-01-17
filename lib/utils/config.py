@@ -119,8 +119,20 @@ __C.RESNET.FIXED_BLOCKS = 1
 #
 __C.TEST = edict()
 
+# Scale to use during testing (can NOT list multiple scales)
+# The scale is the pixel size of an image's shortest side
+__C.TEST.SCALES = (600,)
+
+# Max pixel size of the longest side of a scaled input image
+__C.TEST.MAX_SIZE = 1000
+
+# Overlap threshold used for non-maximum suppression (suppress boxes with
+# IoU >= this threshold)
+__C.TEST.NMS = 0.3
+
 ## NMS threshold used on RPN proposals
 __C.TEST.RPN_NMS_THRESH = 0.7
+
 ## Number of top scoring boxes to keep before apply NMS to RPN proposals
 __C.TEST.RPN_PRE_NMS_TOP_N = 6000
 

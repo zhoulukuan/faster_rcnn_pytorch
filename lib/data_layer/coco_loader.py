@@ -22,6 +22,9 @@ class CocoDataset(Dataset):
         blobs = get_minibatch(minibatch_db, self.num_classes)
         data = blobs['data']
         im_info = blobs['im_info']
-        gt_boxes = blobs['gt_boxes']
+        if self.training:
+            gt_boxes = blobs['gt_boxes']
+        else:
+            gt_boxes = torch.FloatTensor([0, 0, 0, 0, 0])
 
         return data[0].transpose(2, 0, 1), im_info.reshape([3]), gt_boxes
