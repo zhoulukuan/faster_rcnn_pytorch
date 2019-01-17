@@ -31,7 +31,7 @@ class FasterRCNN(nn.Module):
         base_feat = self.RCNN_base(image)
 
         # feed base feat to get RPN
-        rois, rpn_loss_cls, rpn_loss_bbox, pp, np = self.RCNN_rpn(base_feat, im_info, gt_boxes)
+        rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes)
 
         # if in training mode, use predicted rois for refine box
         if self.training:
@@ -71,13 +71,13 @@ class FasterRCNN(nn.Module):
         cls_score = self.RCNN_cls_score(pooled_feat)
         cls_prob = F.softmax(cls_score, 1)
 
-
-        ## Debug
-        _, cls_pred = torch.max(cls_prob, 1)
-        precision  = (cls_pred == rois_label)
-        label_positive = rois_label > 0
-        pos_example_precision = torch.sum(precision.mul(label_positive)).float() / torch.sum(label_positive).float()
-        neg_example_precision = torch.sum(precision.mul(rois_label.eq(0))).float() / torch.sum(rois_label.eq(0)).float()
+        #
+        # ## Debug
+        # _, cls_pred = torch.max(cls_prob, 1)
+        # precision  = (cls_pred == rois_label)
+        # label_positive = rois_label > 0
+        # pos_example_precision = torch.sum(precision.mul(label_positive)).float() / torch.sum(label_positive).float()
+        # neg_example_precision = torch.sum(precision.mul(rois_label.eq(0))).float() / torch.sum(rois_label.eq(0)).float()
 
 
         RCNN_loss_cls = 0
@@ -90,8 +90,7 @@ class FasterRCNN(nn.Module):
             # bounding box regression L1 loss
             RCNN_loss_bbox = _smooth_l1_loss(bbox_pred, rois_target, rois_inside_ws, rois_outside_ws)
 
-        return rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, rois_label, pp, np, \
-    pos_example_precision, neg_example_precision
+        return rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox, rois_label
 
 
     def _init_weights(self):

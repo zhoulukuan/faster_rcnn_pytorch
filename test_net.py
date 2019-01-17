@@ -24,24 +24,9 @@ def parse_args():
     parser.add_argument('--net', dest='net',
                     help='vgg16, res101',
                     default='res101', type=str)
-    parser.add_argument('--disp_interval', dest='disp_interval',
-                      help='number of iterations to display',
-                      default=100, type=int)
-    parser.add_argument('--checkpoint_interval', dest='checkpoint_interval',
-                      help='number of save model and evaluate it',
-                      default=1000, type=int)
-    parser.add_argument('--save_dir', dest='save_dir',
-                      help='directory to save models', default="models",
+    parser.add_argument('--models', dest='models',
+                      help='directory to load models', default="omodels/fasterRCNN_1_234531.pth",
                       type=str)
-    parser.add_argument('--resume', dest='resume',
-                      help='If resume training', default=False,
-                      type=bool)
-    parser.add_argument('--log_dir', dest='log_dir',
-                      help='directory to save logs', default='logs',
-                      type=str)
-    parser.add_argument('--use_tfboard', dest='use_tfboard',
-                      help='if use tensorboardX', default=True,
-                      type=bool)
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
@@ -80,7 +65,7 @@ if __name__ == "__main__":
     if args.net == 'res101':
         fasterRCNN = resnet(imdb.classes, 101, pretrained=True)
     fasterRCNN.create_architecture()
-    checkpoint = torch.load(args.checkpoint)
+    checkpoint = torch.load(args.models)
     fasterRCNN.load_state_dict(checkpoint['model'])
     if cfg.CUDA:
         fasterRCNN.cuda()
@@ -104,7 +89,7 @@ if __name__ == "__main__":
         rois, cls_prob, bbox_pred, \
         rpn_loss_cls, rpn_loss_box, \
         RCNN_loss_cls, RCNN_loss_bbox, \
-        rois_label, pp, np, cls_p, cls_n = fasterRCNN(image, info, gt_boxes)
+        rois_label = fasterRCNN(image, info, gt_boxes)
 
         scores = cls_prob.data
         boxes = rois.data[:, 1:5]

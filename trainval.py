@@ -163,7 +163,7 @@ if __name__ == "__main__":
             rois, cls_prob, bbox_pred, \
             rpn_loss_cls, rpn_loss_box, \
             RCNN_loss_cls, RCNN_loss_bbox, \
-            rois_label, pp, np, cls_p, cls_n = fasterRCNN(image, info, gt_boxes)
+            rois_label = fasterRCNN(image, info, gt_boxes)
 
             loss = rpn_loss_cls.mean() + rpn_loss_box.mean() + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
             # loss = rpn_loss_cls.mean() + rpn_loss_box.mean()

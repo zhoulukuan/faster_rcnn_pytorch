@@ -81,11 +81,11 @@ class RPN(nn.Module):
             rpn_label = torch.index_select(rpn_label.view(-1), 0, rpn_keep).long()
             self.rpn_loss_cls = F.cross_entropy(rpn_cls_score, rpn_label)
 
-            ## debug
-            predict = torch.max(rpn_cls_score, 1)[1]
-            precision = (predict == rpn_label)
-            positive_p = torch.sum(precision.mul(rpn_label.type_as(precision))).float() / torch.sum(rpn_label).float()
-            negative_p = torch.sum(precision.mul(rpn_label.eq(0).type_as(precision))).float() / torch.sum(rpn_label.eq(0)).float()
+            # ## debug
+            # predict = torch.max(rpn_cls_score, 1)[1]
+            # precision = (predict == rpn_label)
+            # positive_p = torch.sum(precision.mul(rpn_label.type_as(precision))).float() / torch.sum(rpn_label).float()
+            # negative_p = torch.sum(precision.mul(rpn_label.eq(0).type_as(precision))).float() / torch.sum(rpn_label.eq(0)).float()
 
 
 
@@ -94,7 +94,10 @@ class RPN(nn.Module):
             self.rpn_loss_box = _smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets,
                                                 rpn_bbox_inside_weights, rpn_bbox_outside_weights, sigma=3, dim=[1, 2, 3])
 
-        return rois, self.rpn_loss_cls, self.rpn_loss_box, positive_p, negative_p
+        # else:
+        #     positive_p = 0
+        #     negative_p = 0
+        return rois, self.rpn_loss_cls, self.rpn_loss_box
 
 
 
