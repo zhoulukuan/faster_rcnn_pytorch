@@ -44,7 +44,7 @@ python demo.py --img_path path/to/your/img_folder --model path/to/my/trained/mod
 ```
 You can get a similar image as follow:
 
-![](images/1.jpg)![](images/1_det.jpg)
+![](images/img1.jpg)![](images/img1_det.jpg)
 
 Result image will be saved as **OriginName_det.jpg** in the same folder.
 
