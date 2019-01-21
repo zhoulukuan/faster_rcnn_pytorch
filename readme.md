@@ -35,6 +35,13 @@ data
 step 4: **Pretrained Model**
 For better results, pretrained model of resnet on ImageNet for initialization is necessary. You can dowoload it from [here](). It should be saved in ./data as well.
 
+step 5: **Complie necessary modules**
+Refer jwyang/faster-rcnn.pytorch choose the right -arch in make.sh file, to compile the cuda code.
+```
+cd lib
+sh make.sh
+```
+More details could be found in the two projects in Acknowledge part.
 
 ## Usage
 ### Demo
