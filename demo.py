@@ -26,16 +26,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a deeplab network')
     parser.add_argument('--image', dest='image',
                       help='testing image path',
-                      default='COCO', type=str)
+                      default='images', type=str)
     parser.add_argument('--net', dest='net',
                     help='vgg16, res101',
                     default='res101', type=str)
     parser.add_argument('--models', dest='models',
-                      help='directory to load models', default="omodels/fasterRCNN_1_234531.pth",
+                      help='directory to load models', default="omodels/fasterRCNN_9_234531.pth",
                       type=str)
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
+    parser.add_argument('--gpu', dest='gpu',
+                        help='if use gpu to inference', default=False,
+                        type=bool)
     args = parser.parse_args()
     return args
 
@@ -61,6 +64,17 @@ def get_image(im):
     # Create a blob to hold the input images
     blob = im_list_to_blob(processed_ims)
     return blob, np.array(im_scale_factors)
+
+def vis_detection(im, class_name, dets, thresh):
+    for i in range(np.minimum(10, dets.shape[0])):
+        bbox = tuple(int(np.round(x)) for x in dets[i, :4])
+        score = dets[i, -1]
+        if score > thresh:
+            cv2.rectangle(im, bbox[0: 2], bbox[2: 4], (0, 204, 0), 2)
+            cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), cv2.FONT_HERSHEY_PLAIN,
+                        1.0, (0, 0, 255), thickness=1)
+        return im
+
 
 
 if __name__ == "__main__":
@@ -91,7 +105,7 @@ if __name__ == "__main__":
     checkpoint = torch.load(args.models)
     fasterRCNN.load_state_dict(checkpoint['model'])
     print("Load model from %s" % (args.models))
-    if cfg.CUDA:
+    if args.gpu:
         fasterRCNN.cuda()
 
     fasterRCNN.eval()
@@ -121,13 +135,17 @@ if __name__ == "__main__":
 
         image = torch.from_numpy(im_blob)
         image = image.permute(0, 3, 1, 2)
-        im_info = torch.from_numpy(im_info)
+        info = torch.from_numpy(im_info)
         gt_boxes = torch.FloatTensor([1,1,1,1,1])
+        bbox_normalize_stds = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS)
+        bbox_normalize_means = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS)
 
-        if cfg.CUDA:
+        if args.gpu:
             image = image.cuda()
             info = info.cuda()
             gt_boxes = gt_boxes.cuda()
+            bbox_normalize_stds = bbox_normalize_stds.cuda()
+            bbox_normalize_means = bbox_normalize_means.cuda()
 
         rois, cls_prob, bbox_pred, \
         rpn_loss_cls, rpn_loss_box, \
@@ -138,18 +156,17 @@ if __name__ == "__main__":
         boxes = rois.data[:, 1:5]
         box_deltas = bbox_pred.data
         if cfg.TRAIN.CLASS_AGNOSTIC:
-            box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                         + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+            box_deltas = box_deltas.view(-1, 4) * bbox_normalize_stds + bbox_normalize_means
             box_deltas = box_deltas.view(-1, 4)
         else:
-            box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                         + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+            box_deltas = box_deltas.view(-1, 4) * bbox_normalize_stds + bbox_normalize_means
             box_deltas = box_deltas.view(-1, 4 * len(imdb.classes))
 
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, info)
         pred_boxes /= im_scales[0]
 
+        im2show = np.copy(im)
         for j in range(1, imdb.num_classes):
             inds = torch.nonzero(scores[:, j] > thresh).view(-1)
             if inds.numel() > 0:
@@ -164,6 +181,16 @@ if __name__ == "__main__":
                 cls_dets = cls_dets[order]
                 keep = nms(cls_dets, cfg.TEST.NMS)
                 cls_dets = cls_dets[keep.view(-1).long()]
+                im2show = vis_detection(im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.5)
+                result_path = os.path.join(args.image, imglist[num_images][:-4] + "_det.jpg")
+
+        cv2.imwrite(result_path, im2show)
+        vis = False
+        if vis:
+            im2showRGB = cv2.cvtColor(im2show, cv2.COLOR_BGR2RGB)
+            cv2.imshow("temp", im2showRGB)
+
+        a = 1
 
 
 

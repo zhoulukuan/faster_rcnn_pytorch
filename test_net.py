@@ -31,7 +31,7 @@ def parse_args():
                     help='vgg16, res101',
                     default='res101', type=str)
     parser.add_argument('--models', dest='models',
-                      help='directory to load models', default="omodels/fasterRCNN_1_234531.pth",
+                      help='directory to load models', default="omodels/fasterRCNN_9_234531.pth",
                       type=str)
     parser.add_argument('--log', dest='output_dir',
                         help='directory to save detections log', default="detections/",
@@ -92,7 +92,6 @@ if __name__ == "__main__":
                  for _ in range(imdb.num_classes)]
     empty_array = np.transpose(np.array([[], [], [], [], []]), (1, 0))
 
-    for i in range(25): _, _, _ = data_iter.next()
     for i in range(num_images):
         image, info, gt_boxes = data_iter.next()
         if cfg.CUDA:
