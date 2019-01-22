@@ -67,7 +67,7 @@ Testing your trained model could be done by running:
 ```
 python test.py --model=path/to/your/model
 ```
-You can see the final result after 30-40 minutes.
+You can see the final result after 10-20 minutes.
 
 ### TensorboardX
 Monitor your training process with tensorboardX. Different losses are saved in different folders. Run:
