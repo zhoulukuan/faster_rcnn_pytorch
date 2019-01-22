@@ -33,7 +33,7 @@ data
 ```
 
 step 4: **Pretrained Model**
-For better results, pretrained model of resnet on ImageNet for initialization is necessary. You can dowoload it from [here](). It should be saved in ./data as well.
+For better results, pretrained model of resnet on ImageNet for initialization is necessary. You can dowoload it from [here](https://pan.baidu.com/s/1uP4McAt4Mzi658eOO2HiXA). It should be saved in ./data as well.
 
 step 5: **Complie necessary modules**
 Refer jwyang/faster-rcnn.pytorch choose the right -arch in make.sh file, to compile the cuda code.
@@ -77,7 +77,7 @@ tensorboard --logdir=$FASTER_RCNN_PYTORCH/logs/$FOLDER_NAME --port=7001
 Then open your firefox or chrome, and visit localhost:7001. 
 
 ## Result
-I got a 33.9 mAP on resnet-101(Train/Test: coco_train+coco_val-minival/minival, scale=600, RoiAlign). Further improvement work is under experiment.
+I got a 34.4 mAP on resnet-101(Train/Test: coco_train+coco_val-minival/minival, scale=600, RoiAlign). Further improvement work is under experiment.
 
 ## Todo
 [ ] Reproduce the results in jwyang

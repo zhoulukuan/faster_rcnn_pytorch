@@ -90,42 +90,6 @@ if __name__ == "__main__":
     lr = cfg.TRAIN.LEARNING_RATE
     params = []
 
-    ### Debug
-
-
-    from roibatchLoader import roibatchLoader
-    # def rank_roidb_ratio(roidb):
-    #     # rank roidb based on the ratio between width and height.
-    #     ratio_large = 2  # largest ratio to preserve.
-    #     ratio_small = 0.5  # smallest ratio to preserve.
-    #
-    #     ratio_list = []
-    #     for i in range(len(roidb)):
-    #         width = roidb[i]['width']
-    #         height = roidb[i]['height']
-    #         ratio = width / float(height)
-    #
-    #         if ratio > ratio_large:
-    #             roidb[i]['need_crop'] = 1
-    #             ratio = ratio_large
-    #         elif ratio < ratio_small:
-    #             roidb[i]['need_crop'] = 1
-    #             ratio = ratio_small
-    #         else:
-    #             roidb[i]['need_crop'] = 0
-    #
-    #         ratio_list.append(ratio)
-    #     ratio_list = np.array(ratio_list)
-    #     ratio_index = np.argsort(ratio_list)
-    #     return ratio_list[ratio_index], ratio_index
-    #
-    # ratio_list, ratio_index = rank_roidb_ratio(roidb)
-    #
-    # dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1, imdb.num_classes, training=True)
-
-
-    ### 123
-
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     iters_per_epoch = int(len(roidb) / 1)
 
@@ -143,7 +107,7 @@ if __name__ == "__main__":
                 params += [{'params': [value], 'lr': lr, 'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
     optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
 
-    loss_temp = 0
+
     for epoch in range(1, cfg.TRAIN.MAX_EPOCHS + 1):
 
         if epoch % (cfg.TRAIN.LR_DECAY_EPOCH + 1) == 0:
@@ -157,17 +121,12 @@ if __name__ == "__main__":
                 info = info.cuda()
                 gt_boxes = gt_boxes.cuda()
 
-            # image.data.resize_(image.size()).copy_(image)
-            # info.data.resize_(info.size()).copy_(info)
-            # gt_boxes.data.resize_(info.size()).copy_(gt_boxes)
             rois, cls_prob, bbox_pred, \
             rpn_loss_cls, rpn_loss_box, \
             RCNN_loss_cls, RCNN_loss_bbox, \
             rois_label = fasterRCNN(image, info, gt_boxes)
 
             loss = rpn_loss_cls.mean() + rpn_loss_box.mean() + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
-            # loss = rpn_loss_cls.mean() + rpn_loss_box.mean()
-            loss_temp += loss.item()
 
             # backward
             optimizer.zero_grad()
@@ -188,9 +147,6 @@ if __name__ == "__main__":
                       % (epoch, step, iters_per_epoch, loss_temp, lr))
                 print("rcnn_cls: %.4f, rcnn_box %.4f, rpn_cls: %.4f, rpn_box: %.4f, pp: %.4f, np: %.4f, cls_p : %.4f, cls_n: %.4f" \
                       % (loss_rcnn_cls, loss_rcnn_box, loss_rpn_cls, loss_rpn_box, pp, np, cls_p, cls_n))
-
-                # print("[epoch %2d][iter %4d/%4d] rpn_cls: %.4f, rpn_box: %.4f, positive: %.4f   negative: %.4f, fg/bg=(%d/%d)" \
-                #       % (epoch, step, iters_per_epoch, loss_rpn_cls, loss_rcnn_box, pp, np, fg_cnt, bg_cnt))
 
                 if args.use_tfboard:
                     info = {
